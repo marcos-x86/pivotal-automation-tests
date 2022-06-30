@@ -5,28 +5,33 @@ import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.response.Response;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
 
-public class POSTProjectTests {
+public class GETProjectTests {
 
+    String endpoint = "https://www.pivotaltracker.com/services/v5/projects";
+    String projectName = "Automation Project";
     String projectID;
 
-    @Test
-    public void createProjectTest() {
-        String endpoint = "https://www.pivotaltracker.com/services/v5/projects";
-
+    @BeforeMethod
+    public void createProject() {
         Response response = RestAssured.given()
                 .header("X-TrackerToken", "")
                 .header("Content-Type", "application/json")
-                .body("{\"name\":\"Executioner\"}")
+                .body("{\"name\":\"" + projectName + "\"}")
                 .when()
                 .post(endpoint);
 
-        // Save ID for deletion
         projectID = response.jsonPath().getString("id");
+    }
+
+    @Test
+    public void getSingleProject() {
+        String getProjectEndpoint = endpoint + "/" + projectID;
+        Response response = RequestManager.sendGetRequest(getProjectEndpoint);
 
         // Status code assertion
         int actualStatusCode = response.statusCode();
@@ -34,13 +39,13 @@ public class POSTProjectTests {
         Assert.assertEquals(actualStatusCode, expectedStatusCode);
 
         // JSON Schema validation
-        File schemaContent = new File("src/test/resources/schemas/POSTProjectResponseSchema.json");
+        File schemaContent = new File("src/test/resources/schemas/GETProjectResponseSchema.json");
         response.then()
                 .assertThat()
                 .body(JsonSchemaValidator.matchesJsonSchema(schemaContent));
 
         // Response body values assertions
-        String expectedProjectName = "Executioner";
+        String expectedProjectName = projectName;
         String actualProjectName = response.jsonPath().getString("name");
         Assert.assertEquals(actualProjectName, expectedProjectName);
 
@@ -50,7 +55,7 @@ public class POSTProjectTests {
     }
 
     @AfterMethod
-    public void deleteProjectsPostCondition() {
+    public void deleteProject() {
         if (projectID != null) {
             String endpoint = "https://www.pivotaltracker.com/services/v5/projects/" + projectID;
 
