@@ -1,7 +1,5 @@
 package pivotal.automation;
 
-import io.restassured.RestAssured;
-import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.response.Response;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -18,26 +16,16 @@ public class PUTProjectTests {
 
     @BeforeMethod
     public void createProject() {
-        Response response = RestAssured.given()
-                .header("X-TrackerToken", "")
-                .header("Content-Type", "application/json")
-                .body("{\"name\":\"" + projectName + "\"}")
-                .when()
-                .post(endpoint);
-
+        String body = "{\"name\":\"" + projectName + "\"}";
+        Response response = RequestManager.sendPostRequest(endpoint, body);
         projectID = response.jsonPath().getString("id");
     }
 
     @Test
     public void modifyProject() {
         String putEndpoint = endpoint + "/" + projectID;
-
-        Response response = RestAssured.given()
-                .header("X-TrackerToken", "")
-                .header("Content-Type", "application/json")
-                .body("{\"name\":\"" + projectName + " modified" + "\"}")
-                .when()
-                .put(putEndpoint);
+        String body = "{\"name\":\"" + projectName + " modified" + "\"}";
+        Response response = RequestManager.sendPutRequest(putEndpoint, body);
 
         // Status code assertion
         int actualStatusCode = response.statusCode();
@@ -45,10 +33,7 @@ public class PUTProjectTests {
         Assert.assertEquals(actualStatusCode, expectedStatusCode);
 
         // JSON Schema validation
-        File schemaContent = new File("src/test/resources/schemas/PUTProjectResponseSchema.json");
-        response.then()
-                .assertThat()
-                .body(JsonSchemaValidator.matchesJsonSchema(schemaContent));
+        JsonSchemaValidator.validateJsonSchema("PUTProjectResponseSchema.json", response);
 
         // Response body values assertions
         String expectedProjectName = projectName + " modified";
@@ -63,12 +48,7 @@ public class PUTProjectTests {
     public void deleteProject() {
         if (projectID != null) {
             String endpoint = "https://www.pivotaltracker.com/services/v5/projects/" + projectID;
-
-            RestAssured.given()
-                    .header("X-TrackerToken", "")
-                    .header("Content-Type", "application/json")
-                    .when()
-                    .delete(endpoint);
+            RequestManager.sendDeleteRequest(endpoint);
         }
     }
 }

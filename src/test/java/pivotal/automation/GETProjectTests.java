@@ -1,7 +1,5 @@
 package pivotal.automation;
 
-import io.restassured.RestAssured;
-import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.response.Response;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -18,13 +16,8 @@ public class GETProjectTests {
 
     @BeforeMethod
     public void createProject() {
-        Response response = RestAssured.given()
-                .header("X-TrackerToken", "")
-                .header("Content-Type", "application/json")
-                .body("{\"name\":\"" + projectName + "\"}")
-                .when()
-                .post(endpoint);
-
+        String body = "{\"name\":\"" + projectName + "\"}";
+        Response response = RequestManager.sendPostRequest(endpoint, body);
         projectID = response.jsonPath().getString("id");
     }
 
@@ -39,10 +32,7 @@ public class GETProjectTests {
         Assert.assertEquals(actualStatusCode, expectedStatusCode);
 
         // JSON Schema validation
-        File schemaContent = new File("src/test/resources/schemas/GETProjectResponseSchema.json");
-        response.then()
-                .assertThat()
-                .body(JsonSchemaValidator.matchesJsonSchema(schemaContent));
+        JsonSchemaValidator.validateJsonSchema("GETProjectResponseSchema.json", response);
 
         // Response body values assertions
         String expectedProjectName = projectName;
@@ -58,12 +48,7 @@ public class GETProjectTests {
     public void deleteProject() {
         if (projectID != null) {
             String endpoint = "https://www.pivotaltracker.com/services/v5/projects/" + projectID;
-
-            RestAssured.given()
-                    .header("X-TrackerToken", "")
-                    .header("Content-Type", "application/json")
-                    .when()
-                    .delete(endpoint);
+            RequestManager.sendDeleteRequest(endpoint);
         }
     }
 }

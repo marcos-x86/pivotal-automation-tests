@@ -1,11 +1,8 @@
 package pivotal.automation;
 
-import io.restassured.RestAssured;
-import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.response.Response;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterTest;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -18,12 +15,8 @@ public class POSTProjectTests {
     public void createProjectTest() {
         String endpoint = "https://www.pivotaltracker.com/services/v5/projects";
 
-        Response response = RestAssured.given()
-                .header("X-TrackerToken", "")
-                .header("Content-Type", "application/json")
-                .body("{\"name\":\"Executioner\"}")
-                .when()
-                .post(endpoint);
+        String body = "{\"name\":\"Executioner\"}";
+        Response response = RequestManager.sendPostRequest(endpoint, body);
 
         // Save ID for deletion
         projectID = response.jsonPath().getString("id");
@@ -34,10 +27,7 @@ public class POSTProjectTests {
         Assert.assertEquals(actualStatusCode, expectedStatusCode);
 
         // JSON Schema validation
-        File schemaContent = new File("src/test/resources/schemas/POSTProjectResponseSchema.json");
-        response.then()
-                .assertThat()
-                .body(JsonSchemaValidator.matchesJsonSchema(schemaContent));
+        JsonSchemaValidator.validateJsonSchema("POSTProjectResponseSchema.json", response);
 
         // Response body values assertions
         String expectedProjectName = "Executioner";
@@ -53,12 +43,7 @@ public class POSTProjectTests {
     public void deleteProjectsPostCondition() {
         if (projectID != null) {
             String endpoint = "https://www.pivotaltracker.com/services/v5/projects/" + projectID;
-
-            RestAssured.given()
-                    .header("X-TrackerToken", "")
-                    .header("Content-Type", "application/json")
-                    .when()
-                    .delete(endpoint);
+            RequestManager.sendDeleteRequest(endpoint);
         }
     }
 }
