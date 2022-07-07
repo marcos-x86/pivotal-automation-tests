@@ -1,4 +1,5 @@
 /.allure/
 /.gradle/
 /.idea/
+/allure-results/
 /build/
